@@ -54,6 +54,10 @@ button {
   overflow: hidden;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -115,6 +119,60 @@ h1 {
   justify-content: space-between;
   gap: 12px;
   padding: 18px 28px;
+}
+
+.setup-form {
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+}
+
+.field-row {
+  display: grid;
+  gap: 8px;
+}
+
+.field-row label,
+.player-field label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.field-row select,
+.player-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.field-row select:focus-visible,
+.player-field input:focus-visible {
+  border-color: var(--accent);
+  outline: 3px solid rgba(244, 196, 48, 0.35);
+}
+
+.field-hint {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.player-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.player-field {
+  display: grid;
+  gap: 8px;
 }
 
 .segmented-control {
@@ -200,6 +258,29 @@ h2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 24px 0 18px;
+}
+
+.round-summary {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0 18px;
+}
+
+.score-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  font-weight: 850;
+}
+
+.score-row.winner {
+  border-color: rgba(20, 114, 67, 0.35);
+  background: var(--right-soft);
 }
 
 .answer-button {
@@ -298,6 +379,7 @@ h2 {
 
   .topbar,
   .toolbar,
+  .setup-form,
   .question-card {
     padding-left: 18px;
     padding-right: 18px;
@@ -309,6 +391,10 @@ h2 {
 
   .score-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .player-fields {
+    grid-template-columns: 1fr;
   }
 
   .score-grid div {
