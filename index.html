@@ -61,13 +61,18 @@
         </header>
 
         <div class="toolbar" aria-label="Practice controls">
-          <div class="segmented-control" role="group" aria-label="Practice mode">
-            <button class="mode-button active" type="button" data-mode="all">All</button>
-            <button class="mode-button" type="button" data-mode="missed">Missed</button>
+          <div id="resultTabs" class="segmented-control hidden" role="group" aria-label="Result views">
+            <button class="mode-button active" type="button" data-view="scores">Scores</button>
+            <button class="mode-button" type="button" data-view="missed">Missed</button>
           </div>
-          <button id="shuffleButton" class="icon-button" type="button" title="Shuffle questions" aria-label="Shuffle questions">
-            <span aria-hidden="true">↻</span>
-          </button>
+          <div class="toolbar-actions">
+            <button id="settingsButton" class="icon-button" type="button" title="New settings" aria-label="New settings">
+              <span aria-hidden="true">⚙</span>
+            </button>
+            <button id="shuffleButton" class="icon-button" type="button" title="Shuffle questions" aria-label="Shuffle questions">
+              <span aria-hidden="true">↻</span>
+            </button>
+          </div>
         </div>
 
         <div class="progress-track" aria-hidden="true">
@@ -86,6 +91,7 @@
 
           <div id="alternatives" class="alternatives" aria-label="Answer choices"></div>
           <div id="roundSummary" class="round-summary hidden" aria-label="Final scores"></div>
+          <div id="missedSummary" class="missed-summary hidden" aria-label="Missed answers"></div>
 
           <div id="feedback" class="feedback" aria-live="polite"></div>
 

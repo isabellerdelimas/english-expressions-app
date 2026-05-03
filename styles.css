@@ -121,6 +121,11 @@ h1 {
   padding: 18px 28px;
 }
 
+.toolbar-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .setup-form {
   display: grid;
   gap: 20px;
@@ -260,7 +265,8 @@ h2 {
   margin: 24px 0 18px;
 }
 
-.round-summary {
+.round-summary,
+.missed-summary {
   display: grid;
   gap: 10px;
   margin: 24px 0 18px;
@@ -281,6 +287,58 @@ h2 {
 .score-row.winner {
   border-color: rgba(20, 114, 67, 0.35);
   background: var(--right-soft);
+}
+
+.missed-row {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.missed-question {
+  display: grid;
+  gap: 6px;
+}
+
+.missed-question strong {
+  font-size: 1.05rem;
+}
+
+.missed-question p {
+  margin-bottom: 0;
+  color: #394541;
+  line-height: 1.45;
+}
+
+.missed-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.missed-detail {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.missed-detail span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.missed-detail p {
+  margin-bottom: 0;
+  font-weight: 760;
+  line-height: 1.35;
 }
 
 .answer-button {
@@ -402,6 +460,10 @@ h2 {
   }
 
   .alternatives {
+    grid-template-columns: 1fr;
+  }
+
+  .missed-detail-grid {
     grid-template-columns: 1fr;
   }
 

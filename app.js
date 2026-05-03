@@ -11,7 +11,8 @@ const state = {
   streak: 0,
   answered: 0,
   missedIds: new Set(),
-  mode: "all",
+  roundMisses: [],
+  resultView: "scores",
   locked: false,
   completed: false,
   selectedQuestionCount: 0,
@@ -30,6 +31,7 @@ const elements = {
   streakValue: hasDocument ? document.querySelector("#streakValue") : null,
   progressValue: hasDocument ? document.querySelector("#progressValue") : null,
   progressBar: hasDocument ? document.querySelector("#progressBar") : null,
+  resultTabs: hasDocument ? document.querySelector("#resultTabs") : null,
   questionNumber: hasDocument ? document.querySelector("#questionNumber") : null,
   turnLabel: hasDocument ? document.querySelector("#turnLabel") : null,
   modeLabel: hasDocument ? document.querySelector("#modeLabel") : null,
@@ -37,9 +39,11 @@ const elements = {
   usageText: hasDocument ? document.querySelector("#usageText") : null,
   alternatives: hasDocument ? document.querySelector("#alternatives") : null,
   roundSummary: hasDocument ? document.querySelector("#roundSummary") : null,
+  missedSummary: hasDocument ? document.querySelector("#missedSummary") : null,
   feedback: hasDocument ? document.querySelector("#feedback") : null,
   tipButton: hasDocument ? document.querySelector("#tipButton") : null,
   nextButton: hasDocument ? document.querySelector("#nextButton") : null,
+  settingsButton: hasDocument ? document.querySelector("#settingsButton") : null,
   shuffleButton: hasDocument ? document.querySelector("#shuffleButton") : null,
   modeButtons: hasDocument ? document.querySelectorAll(".mode-button") : [],
 };
@@ -134,57 +138,48 @@ function handleSetupSubmit(event) {
   state.selectedQuestionCount = selectedQuestionCount;
   elements.setupPanel.classList.add("hidden");
   elements.gamePanel.classList.remove("hidden");
-  startPractice("all");
+  startPractice();
 }
 
-function startPractice(mode) {
-  state.mode = mode;
+function startPractice() {
   state.currentIndex = 0;
   state.streak = 0;
   state.answered = 0;
+  state.roundMisses = [];
+  state.resultView = "scores";
   state.locked = false;
   state.completed = false;
   state.players = state.players.map((player) => ({ ...player, score: 0 }));
 
-  const source =
-    mode === "missed"
-      ? state.allQuestions.filter((question) => state.missedIds.has(question.id))
-      : state.allQuestions;
-
   const roundSize = getRoundSize(
-    source.length,
-    state.selectedQuestionCount || source.length,
+    state.allQuestions.length,
+    state.selectedQuestionCount || state.allQuestions.length,
     state.players.length,
   );
-  state.queue = shuffle([...source]).slice(0, roundSize);
-  updateModeButtons();
+  state.queue = shuffle([...state.allQuestions]).slice(0, roundSize);
+  elements.resultTabs.classList.add("hidden");
+  updateResultTabs();
   renderQuestion();
 }
 
 function renderQuestion() {
   updateStats();
+  elements.feedback.classList.remove("hidden");
+  elements.tipButton.classList.remove("hidden");
+  elements.nextButton.classList.remove("hidden");
   elements.roundSummary.classList.add("hidden");
   elements.roundSummary.innerHTML = "";
+  elements.missedSummary.classList.add("hidden");
+  elements.missedSummary.innerHTML = "";
 
   if (state.queue.length === 0) {
-    const hasMissedButNotEnough = state.mode === "missed" && state.missedIds.size > 0;
     elements.questionNumber.textContent = "No questions";
     elements.turnLabel.textContent = "";
-    elements.modeLabel.textContent = state.mode === "missed" ? "Missed expressions" : "All expressions";
-    elements.expressionText.textContent =
-      hasMissedButNotEnough
-        ? "Not enough missed expressions"
-        : state.mode === "missed"
-        ? "No missed expressions yet"
-        : "No expressions found";
-    elements.usageText.textContent =
-      hasMissedButNotEnough
-        ? "Add enough missed expressions for an even turn split, then try this mode again."
-        : state.mode === "missed"
-        ? "Answer a few questions in All mode, then come back here to review mistakes."
-        : "Check the JSON file and refresh the page.";
+    elements.modeLabel.textContent = "All expressions";
+    elements.expressionText.textContent = "No expressions found";
+    elements.usageText.textContent = "Check the JSON file and refresh the page.";
     elements.alternatives.innerHTML = "";
-    setFeedback("Your review list is clear.", "");
+    elements.feedback.classList.add("hidden");
     elements.tipButton.disabled = true;
     elements.nextButton.disabled = true;
     return;
@@ -198,7 +193,7 @@ function renderQuestion() {
   elements.nextButton.textContent = "Next";
   elements.questionNumber.textContent = `Question ${state.currentIndex + 1}`;
   elements.turnLabel.textContent = `${formatPossessive(getCurrentPlayer().name)} turn`;
-  elements.modeLabel.textContent = state.mode === "missed" ? "Missed expressions" : "All expressions";
+  elements.modeLabel.textContent = "All expressions";
   elements.expressionText.textContent = question.expression;
   elements.usageText.textContent = question.usageExample;
   setFeedback("Choose the meaning that best matches the expression.", "");
@@ -231,6 +226,13 @@ function chooseAnswer(button, alternative) {
   } else {
     state.streak = 0;
     state.missedIds.add(question.id);
+    state.roundMisses.push({
+      question: question.expression,
+      usageExample: question.usageExample,
+      answerGiven: alternative,
+      correctAnswer: question.correctAnswer,
+      playerName: currentPlayer.name,
+    });
     setFeedback(
       `Not quite, ${currentPlayer.name}. Correct answer: ${question.correctAnswer}. ${question.tip}`,
       "error",
@@ -276,21 +278,30 @@ function showCompletedRound() {
   state.currentIndex = state.queue.length - 1;
 
   const leaders = getLeaders(state.players);
+  state.resultView = "scores";
+  elements.resultTabs.classList.remove("hidden");
+  updateResultTabs();
+  renderScoresView(leaders);
+  updateStats();
+}
+
+function renderScoresView(leaders = getLeaders(state.players)) {
   elements.questionNumber.textContent = "Round complete";
   elements.turnLabel.textContent = "";
-  elements.modeLabel.textContent = state.mode === "missed" ? "Missed expressions" : "All expressions";
+  elements.modeLabel.textContent = "Scores";
   elements.expressionText.textContent = "Final scores";
   elements.usageText.textContent =
     leaders.length === 1
       ? `${leaders[0].name} wins with ${leaders[0].score} point${leaders[0].score === 1 ? "" : "s"}.`
       : `Tie game: ${leaders.map((player) => player.name).join(", ")}.`;
   elements.alternatives.innerHTML = "";
+  elements.missedSummary.classList.add("hidden");
+  elements.missedSummary.innerHTML = "";
   renderRoundSummary(leaders);
-  elements.tipButton.disabled = true;
-  elements.nextButton.disabled = true;
+  elements.feedback.classList.add("hidden");
+  elements.tipButton.classList.add("hidden");
+  elements.nextButton.classList.add("hidden");
   elements.nextButton.textContent = "Finished";
-  setFeedback("Use the shuffle button to start a new round with the same setup.", "success");
-  updateStats();
 }
 
 function renderRoundSummary(leaders) {
@@ -315,6 +326,78 @@ function renderRoundSummary(leaders) {
     });
 }
 
+function renderMissedView() {
+  elements.questionNumber.textContent = "Round complete";
+  elements.turnLabel.textContent = "";
+  elements.modeLabel.textContent = "Missed";
+  elements.expressionText.textContent = "Missed answers";
+  elements.usageText.textContent =
+    state.roundMisses.length === 0
+      ? "No missed answers this round."
+      : `${state.roundMisses.length} missed answer${state.roundMisses.length === 1 ? "" : "s"} this round.`;
+  elements.alternatives.innerHTML = "";
+  elements.roundSummary.classList.add("hidden");
+  elements.roundSummary.innerHTML = "";
+  elements.feedback.classList.add("hidden");
+  elements.tipButton.classList.add("hidden");
+  elements.nextButton.classList.add("hidden");
+  renderMissedSummary();
+}
+
+function renderMissedSummary() {
+  elements.missedSummary.innerHTML = "";
+  elements.missedSummary.classList.remove("hidden");
+
+  if (state.roundMisses.length === 0) {
+    const row = document.createElement("div");
+    row.className = "missed-row";
+    row.textContent = "Perfect round. Nothing to review here.";
+    elements.missedSummary.append(row);
+    return;
+  }
+
+  state.roundMisses.forEach((miss) => {
+    const row = document.createElement("div");
+    row.className = "missed-row";
+
+    const question = document.createElement("div");
+    question.className = "missed-question";
+
+    const title = document.createElement("strong");
+    title.textContent = miss.question;
+
+    const prompt = document.createElement("p");
+    prompt.textContent = miss.usageExample;
+
+    question.append(title, prompt);
+
+    const details = document.createElement("div");
+    details.className = "missed-detail-grid";
+    details.append(
+      createMissedDetail("Player", miss.playerName),
+      createMissedDetail("Answer given", miss.answerGiven),
+      createMissedDetail("Correct answer", miss.correctAnswer),
+    );
+
+    row.append(question, details);
+    elements.missedSummary.append(row);
+  });
+}
+
+function createMissedDetail(label, value) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "missed-detail";
+
+  const labelElement = document.createElement("span");
+  labelElement.textContent = label;
+
+  const valueElement = document.createElement("p");
+  valueElement.textContent = value;
+
+  wrapper.append(labelElement, valueElement);
+  return wrapper;
+}
+
 function updateStats() {
   const answered = Math.min(state.answered, state.queue.length);
   const currentPlayer = state.players.length > 0 ? getCurrentPlayer() : null;
@@ -327,10 +410,48 @@ function updateStats() {
   elements.progressBar.style.width = `${progress}%`;
 }
 
-function updateModeButtons() {
+function updateResultTabs() {
   elements.modeButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.mode === state.mode);
+    button.classList.toggle("active", button.dataset.view === state.resultView);
   });
+}
+
+function showResultView(view) {
+  if (!state.completed) return;
+
+  state.resultView = view;
+  updateResultTabs();
+
+  if (view === "missed") {
+    renderMissedView();
+  } else {
+    renderScoresView();
+  }
+}
+
+function showSetupPanel() {
+  state.currentIndex = 0;
+  state.streak = 0;
+  state.answered = 0;
+  state.roundMisses = [];
+  state.resultView = "scores";
+  state.locked = false;
+  state.completed = false;
+  state.queue = [];
+  state.players = [];
+
+  elements.gamePanel.classList.add("hidden");
+  elements.setupPanel.classList.remove("hidden");
+  elements.resultTabs.classList.add("hidden");
+  elements.feedback.classList.add("hidden");
+  elements.tipButton.classList.remove("hidden");
+  elements.nextButton.classList.remove("hidden");
+  elements.progressBar.style.width = "0%";
+  elements.scoreValue.textContent = "0";
+  elements.streakValue.textContent = "0";
+  elements.progressValue.textContent = "0/0";
+  renderPlayerFields();
+  renderQuestionCountOptions();
 }
 
 function getCurrentQuestion() {
@@ -411,9 +532,10 @@ if (hasDocument) {
   elements.questionCount.addEventListener("change", renderQuestionCountOptions);
   elements.nextButton.addEventListener("click", nextQuestion);
   elements.tipButton.addEventListener("click", showTip);
-  elements.shuffleButton.addEventListener("click", () => startPractice(state.mode));
+  elements.settingsButton.addEventListener("click", showSetupPanel);
+  elements.shuffleButton.addEventListener("click", startPractice);
   elements.modeButtons.forEach((button) => {
-    button.addEventListener("click", () => startPractice(button.dataset.mode));
+    button.addEventListener("click", () => showResultView(button.dataset.view));
   });
 
   loadQuestions();
