@@ -8,6 +8,7 @@ const state = {
   missedIds: new Set(),
   mode: "all",
   locked: false,
+  completed: false,
 };
 
 const elements = {
@@ -49,6 +50,7 @@ function startPractice(mode) {
   state.streak = 0;
   state.answered = 0;
   state.locked = false;
+  state.completed = false;
 
   const source =
     mode === "missed"
@@ -84,6 +86,7 @@ function renderQuestion() {
 
   elements.tipButton.disabled = false;
   elements.nextButton.disabled = true;
+  elements.nextButton.textContent = "Next";
   elements.questionNumber.textContent = `Question ${state.currentIndex + 1}`;
   elements.modeLabel.textContent = state.mode === "missed" ? "Missed expressions" : "All expressions";
   elements.expressionText.textContent = question.expression;
@@ -130,10 +133,13 @@ function chooseAnswer(button, alternative) {
   });
 
   elements.nextButton.disabled = false;
+  elements.nextButton.textContent = state.answered >= state.queue.length ? "See results" : "Next";
   updateStats();
 }
 
 function showTip() {
+  if (state.completed || state.queue.length === 0) return;
+
   const question = getCurrentQuestion();
   setFeedback(question.tip, "");
 }
@@ -141,21 +147,44 @@ function showTip() {
 function nextQuestion() {
   if (state.queue.length === 0) return;
 
-  state.currentIndex += 1;
-  if (state.currentIndex >= state.queue.length) {
-    state.currentIndex = 0;
-    state.queue = shuffle([...state.queue]);
+  if (state.answered >= state.queue.length) {
+    showCompletedRound();
+    return;
   }
+
+  state.currentIndex += 1;
 
   renderQuestion();
 }
 
+function showCompletedRound() {
+  state.completed = true;
+  state.locked = true;
+  state.currentIndex = state.queue.length - 1;
+
+  elements.questionNumber.textContent = "Round complete";
+  elements.modeLabel.textContent = state.mode === "missed" ? "Missed expressions" : "All expressions";
+  elements.expressionText.textContent = `${state.score}/${state.queue.length}`;
+  elements.usageText.textContent =
+    state.missedIds.size > 0
+      ? `You missed ${state.missedIds.size} expression${state.missedIds.size === 1 ? "" : "s"}. Use Missed mode to review them.`
+      : "Perfect round. You answered every expression correctly.";
+  elements.alternatives.innerHTML = "";
+  elements.tipButton.disabled = true;
+  elements.nextButton.disabled = true;
+  elements.nextButton.textContent = "Finished";
+  setFeedback("Use the shuffle button to start a new round.", "success");
+  updateStats();
+}
+
 function updateStats() {
+  const answered = Math.min(state.answered, state.queue.length);
+
   elements.scoreValue.textContent = state.score;
   elements.streakValue.textContent = state.streak;
-  elements.progressValue.textContent = `${state.answered}/${state.queue.length}`;
+  elements.progressValue.textContent = `${answered}/${state.queue.length}`;
 
-  const progress = state.queue.length ? Math.min((state.answered / state.queue.length) * 100, 100) : 0;
+  const progress = state.queue.length ? (answered / state.queue.length) * 100 : 0;
   elements.progressBar.style.width = `${progress}%`;
 }
 
